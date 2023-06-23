@@ -1,0 +1,158 @@
+\documentclass{beamer}
+
+\usepackage{luatexja-fontspec}
+
+\usepackage{tcolorbox}
+
+\usetheme{default}
+\usecolortheme{dove}
+
+\begin{document}
+
+\title{X Window Systemで遊んだ}
+\subtitle{〜嗚呼、素晴らしきかなX Window System〜}
+\author{Endered}
+\date{2023年06月23日}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{自己紹介}
+  \begin{itemize}
+  \item 名前: Endered
+  \item 所属: 会津大学大学院1年
+  \item 趣味: Lisp / 言語処理計
+  \item 好きなもの: 関数型言語 / \alert<2>{Linux} \onslide<2>{ $\leftarrow$ なぜ好きなのか？}
+  \item その他: スライドを \LaTeX で書いてみました(楽しかった)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[c]{}
+  \frametitle{なぜLinuxが好きなのか}
+  \centering
+  色々理由はありますが、特筆するとしたら
+
+  \onslide<2>{X Window Systemがあるから}
+\end{frame}
+
+\begin{frame}
+  \frametitle{X Window Systemとは}
+  GUIに関する機能を提供するための\onslide*<1>{通信規格}\onslide*<2>{\alert{通信規格}} \& その実装
+  \begin{itemize}
+  \item 提供している機能
+    \begin{itemize}
+    \item 画面にウィンドウを描画
+    \item マウスを動かす \& クリックの処理
+    \item キーボード入力を処理
+    \end{itemize}
+  \item<2> 通信規格で定義されているので非常に便利
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{すごいぞX Window System(X転送について)}
+  X転送とは
+  \begin{itemize}
+  \item 我々の感覚としては画面転送(VNC)が近いです
+  \item ただし、描画命令をネットワーク越しに送っている
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{実際にX転送を使ってみよう}
+
+  以下のコマンドを実行するだけ
+
+  \begin{tcolorbox}[title=emacsをローカルに転送する例]
+    \texttt{ssh -Y "適当なサーバ" emacs}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}
+  \frametitle{X転送の何がすごいのか}
+  \begin{itemize}
+  \item X転送はX Window Systemの\textbf{描画命令}を転送している
+    \begin{itemize}
+    \item VNCなどのソフトウェアは描画結果を転送している
+    \end{itemize}
+  \item<2-> つまり、X転送では(理論上)FPSが遊べる
+    \begin{itemize}
+    \item VNCだと: マウスカーソルが上手に処理できなくて画面が吹っ飛ぶ
+      \begin{itemize}
+      \item<3-> マウスカーソルの位置を転送しているから
+      \end{itemize}
+    \item X転送だと: 普通に遊べる(GPUで描画する系は遅い)
+      \begin{itemize}
+      \item<3-> マウスカーソルの移動イベントを転送しているから
+      \end{itemize}
+    \end{itemize}
+  \item<4> リモートで起動したソフトウェアをローカルで動いているかのように使える
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{ssh -Y "サーバ名"がやっていること}
+  \begin{tcolorbox}[title=注意]
+    \begin{itemize}
+    \item ここではリモートの\texttt{\$DISPLAY}を$x$、ローカルの\texttt{\$DISPLAY}を$y$だとします。
+    \item また、環境のよっては動かない場合があります。
+    \end{itemize}
+  \end{tcolorbox}
+  \begin{enumerate}
+  \item<2-> リモートのポート $6000 + x$ をローカルの $6000 + y$ にフォワーディングする
+  \item<3-> ローカルのディスプレイ$y$へ描画するのに必要な鍵を取得する
+  \item<4-> リモートの$x$へ描画する際に先程取得した鍵を使うようにする
+  \item<5-> 以上(恐らく)
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}
+  \frametitle{X転送を自分でやってみる}
+  実践してみましょう
+  \begin{itemize}
+  \item リモートのポート $6000 + x$ をローカルの $6000 + y$ にフォワーディングする
+    \begin{itemize}
+    \item<2-> ssh -R 6123:/tmp/.X11-unix/X0
+    \item<2-> \textreferencemark ここでは、フォワーディング先をポートではなくソケットにしている
+    \end{itemize}
+  \item ローカルのディスプレイ$y$へ描画するのに必要な鍵を取得する
+    \begin{itemize}
+    \item<3-> \texttt{xauth list \$DISPLAY | grep -oP '\textbackslash w*\$'}
+    \end{itemize}
+  \item リモートの$x$へ描画する際に先程取得した鍵を使うようにする
+    \begin{itemize}
+    \item<4-> \texttt{xauth add \$DISPLAY . "先程取得した鍵"}
+    \item <4-> この際、\texttt{\$DISPLAY}を\texttt{:123}に設定する
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[c]{}
+  \centering
+  動いた〜
+\end{frame}
+
+\begin{frame}
+  \frametitle{作ったものの紹介}
+  X Window Systemを理解するためにちょっとしたソフトウェアを作ってみました
+
+  \pause
+
+  その名も \textit{Space Ship Cursor}
+\end{frame}
+
+\begin{frame}
+  \frametitle{操作説明}
+  ソフトを起動すると宇宙船を模したカーソルが出現するよ
+  \begin{itemize}
+  \item WSで前進/後進、ADで左右に回転！
+  \item Jでマウスクリック！
+  \end{itemize}
+  \pause
+  ということでマウスを使用するゲームでも遊ぼうと思います
+\end{frame}
+
+\end{document}
